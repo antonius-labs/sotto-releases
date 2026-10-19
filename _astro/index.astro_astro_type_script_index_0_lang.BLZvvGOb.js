@@ -1,0 +1,64 @@
+var e={arrow:`<path d="M4 12h15m-6-6 6 6-6 6"/>`,arrowUp:`<path d="M6 18 18 6M6 6h12v12"/>`,play:`<path d="m9 5 11 7-11 7Z"/>`,pause:`<path d="M9 5v14M15 5v14"/>`,sound:`<path d="M4 10v4M8 6v12M12 3v18M16 7v10M20 10v4"/>`,check:`<path d="m5 12 4 4L19 6"/>`,mic:`<rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8"/>`,monitor:`<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 17v4m-4 0h8"/>`,file:`<path d="M14 3H5v18h14V8l-5-5Zm0 0v5h5M8 13h8m-8 4h6"/>`,search:`<circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/>`,lock:`<rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/>`,download:`<path d="M12 3v12m-5-5 5 5 5-5M5 17v4h14v-4"/>`},t=t=>`<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${e[t]}</svg>`,n={render(){},destroy(){}},r=4800;function i(e,t){let i=e.getContext(`2d`);if(!i)return n;let a=Array.from({length:r},(e,t)=>{let n=t*.61803398875%1,r=t*.754877666%1;return{angle:t*.569840296%1*Math.PI*2,u:n,v:r,radius:.65+r*.7,seed:t*.1}}),o=e.dataset.accent||`99,184,231`,s=0,c=!0,l=[0,0];function u(n=0){cancelAnimationFrame(s);let r=e.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,1.5),{width:f,height:p}=r;if(!f||!p)return;(e.width!==Math.round(f*d)||e.height!==Math.round(p*d))&&(e.width=Math.round(f*d),e.height=Math.round(p*d),i.setTransform(d,0,0,d,0,0)),i.clearRect(0,0,f,p);let m=t()?n*15e-5:1.2,h=.3+Math.sin(m)*.18+l[0]*.2,g=Math.min(f*.23,p*.51);for(let e of a){let t=(e.u-.5)*5.2,n=Math.exp(-t*t*.25),r=Math.sin(t*3.4+m*4)*n*.7,a=Math.cos(e.angle)*e.radius*.72+r,s=Math.sin(e.angle)*e.radius*.65,c=t*Math.cos(h)+s*Math.sin(h),u=-t*Math.sin(h)+s*Math.cos(h);a+=Math.sin(e.seed+m*3)*.03;let d=4.4/(4.4+u),_=f*.5+c*g*d,v=p*.5+a*g*d+l[1]*9,y=.4+(u+1.5)/3*.55,b=e.v>.62||Math.sin(e.seed+m)>.8;i.fillStyle=b?`rgba(${o},${y})`:`rgba(222,233,243,${y})`;let x=(.85+e.v*.7)*d;i.fillRect(_,v,x,x)}e.classList.add(`rendered`),t()&&c&&!document.hidden&&(s=requestAnimationFrame(u))}let d=t=>{let n=e.getBoundingClientRect();l=[(t.clientX-n.left)/n.width-.5,(t.clientY-n.top)/n.height-.5]};e.addEventListener(`pointermove`,d);let f=new IntersectionObserver(e=>{c=e.some(e=>e.isIntersecting),c?u(performance.now()):cancelAnimationFrame(s)});f.observe(e);let p=()=>document.hidden?cancelAnimationFrame(s):u(performance.now());return document.addEventListener(`visibilitychange`,p),u(),{render:()=>u(performance.now()),destroy(){cancelAnimationFrame(s),f.disconnect(),e.removeEventListener(`pointermove`,d),document.removeEventListener(`visibilitychange`,p)}}}var a=`attribute vec2 a;varying vec2 uv;void main(){uv=a;gl_Position=vec4(a,0.,1.);}`,o=`precision highp float;
+varying vec2 uv;
+uniform vec2 resolution;
+uniform vec2 pointer;
+uniform float time;
+uniform float dark;
+
+mat2 rotate(float a){return mat2(cos(a),-sin(a),sin(a),cos(a));}
+
+// Distance to the nearest of five capsules, turned by time and the pointer.
+float shape(vec3 p){
+  p.xz=rotate(.52+pointer.x*.22+sin(time*.25)*.09)*p.xz;
+  p.xy=rotate(-.29+pointer.y*.07)*p.xy;
+  float d=10.;
+  for(int i=0;i<5;i++){
+    float f=float(i)-2.;
+    vec3 q=p-vec3(f*.46,0.,sin(f*.7+time*.5)*.07);
+    float h=1.1-abs(f)*.32+sin(time*.9+f)*.045;
+    q.y-=clamp(q.y,-h,h);
+    d=min(d,length(q)-.195);
+  }
+  return d;
+}
+
+vec3 normal(vec3 p){
+  vec2 e=vec2(.001,0.);
+  return normalize(vec3(shape(p+e.xyy)-shape(p-e.xyy),shape(p+e.yxy)-shape(p-e.yxy),shape(p+e.yyx)-shape(p-e.yyx)));
+}
+
+// A studio environment for the chrome to reflect: a bright key, a cool rim, a dark horizon.
+vec3 environment(vec3 r){
+  vec3 c=mix(vec3(.13,.15,.20),vec3(.89,.91,.96),smoothstep(-.4,.7,r.y));
+  c*=.35+.65*smoothstep(-.85,.3,r.x);
+  c+=vec3(.9,.95,1.)*pow(max(0.,dot(r,normalize(vec3(-.8,.5,1.)))),32.)*1.8;
+  c+=vec3(.48,.55,.85)*pow(max(0.,dot(r,normalize(vec3(.9,.1,.4)))),20.)*.65;
+  c*=1.-.83*exp(-pow((r.y-.12)*11.,2.));
+  return c;
+}
+
+void main(){
+  vec2 v=uv;v.x*=resolution.x/resolution.y;
+  vec3 ro=vec3(0.,.04,5.3);
+  vec3 rd=normalize(vec3(v*1.85,-4.));
+  float t=0.;float d=1.;float ma=10.;
+  for(int i=0;i<96;i++){d=shape(ro+rd*t);ma=min(ma,d/max(t,.2));if(d<.0008||t>9.)break;t+=d*.9;}
+  // A miss near the surface blends a soft silhouette: anti-aliased edges without multisampling.
+  float px=3.7/resolution.y;
+  if(t>9.){
+    float cov=1.-smoothstep(0.,px*1.6,ma);
+    if(cov<=.002){gl_FragColor=vec4(0.);return;}
+    vec3 edge=vec3(.16,.18,.23)*(.6+.4*smoothstep(-.4,.7,rd.y));
+    gl_FragColor=vec4(edge*cov,cov);
+    return;
+  }
+  vec3 p=ro+rd*t;vec3 n=normal(p);vec3 r=reflect(rd,n);
+  vec3 color=environment(r);
+  float fresnel=pow(1.-max(0.,dot(n,-rd)),3.);
+  color=mix(color,vec3(.85,.9,1.),fresnel*.3);
+  float light=max(0.,dot(n,normalize(vec3(-1.,2.,3.))));
+  color*=.65+.35*light;
+  color=mix(color*vec3(.86,.91,1.),color,dark);
+  color=pow(color,vec3(.83));
+  gl_FragColor=vec4(color,1.);
+}`,s=15.5,c=.06;function l(e,t){let r=e.getContext(`webgl`,{alpha:!0,antialias:!1,powerPreference:`low-power`});if(!r)return n;let i=(e,t)=>{let n=r.createShader(e);if(!n)throw Error(`WebGL could not create a shader`);if(r.shaderSource(n,t),r.compileShader(n),!r.getShaderParameter(n,r.COMPILE_STATUS))throw Error(r.getShaderInfoLog(n)??`shader failed to compile`);return n},l;try{let e=r.createProgram();if(!e)throw Error(`WebGL could not create a program`);if(l=e,r.attachShader(l,i(r.VERTEX_SHADER,a)),r.attachShader(l,i(r.FRAGMENT_SHADER,o)),r.linkProgram(l),!r.getProgramParameter(l,r.LINK_STATUS))throw Error(`WebGL link failed`)}catch(e){return console.debug(`sculpture: WebGL unavailable, keeping the fallback`,e),n}r.useProgram(l);let u=r.createBuffer();r.bindBuffer(r.ARRAY_BUFFER,u),r.bufferData(r.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),r.STATIC_DRAW);let d=r.getAttribLocation(l,`a`);r.enableVertexAttribArray(d),r.vertexAttribPointer(d,2,r.FLOAT,!1,0,0);let f={resolution:r.getUniformLocation(l,`resolution`),pointer:r.getUniformLocation(l,`pointer`),time:r.getUniformLocation(l,`time`),dark:r.getUniformLocation(l,`dark`)},p=0,m=!0,h=0,g=[0,0],_=[0,0];function v(n=0){cancelAnimationFrame(p),p=0;let i=e.getBoundingClientRect(),a=Math.min(devicePixelRatio||1,2,1600/Math.max(i.width,1),1200/Math.max(i.height,1)),o=Math.max(1,Math.round(i.width*a)),s=Math.max(1,Math.round(i.height*a));(e.width!==o||e.height!==s)&&(e.width=o,e.height=s,r.viewport(0,0,o,s)),_[0]+=(g[0]-_[0])*c,_[1]+=(g[1]-_[1])*c,r.uniform2f(f.resolution,o,s),r.uniform2f(f.pointer,_[0],_[1]),r.uniform1f(f.time,t()?n*.001:1.5),r.uniform1f(f.dark,+(e.dataset.material===`dark`)),r.drawArrays(r.TRIANGLES,0,6),e.classList.add(`rendered`),t()&&m&&!document.hidden&&y()}function y(){p=requestAnimationFrame(e=>{e-h>=s?(h=e,v(e)):y()})}let b=new IntersectionObserver(e=>{m=e.some(e=>e.isIntersecting),m?v(performance.now()):cancelAnimationFrame(p)});b.observe(e);let x=n=>{let r=e.getBoundingClientRect();g=[(n.clientX-r.left)/r.width-.5,(n.clientY-r.top)/r.height-.5],t()&&!p&&v(performance.now())};e.addEventListener(`pointermove`,x);let S=()=>document.hidden?cancelAnimationFrame(p):v(performance.now());return document.addEventListener(`visibilitychange`,S),v(),{render:()=>v(performance.now()),destroy(){cancelAnimationFrame(p),b.disconnect(),e.removeEventListener(`pointermove`,x),document.removeEventListener(`visibilitychange`,S),r.deleteBuffer(u),r.deleteProgram(l)}}}var u=`sotto-site-motion`,d=(e,t=document)=>[...t.querySelectorAll(e)];function f(e,t,n,r){for(let n of e){let e=n===t;n.setAttribute(`aria-selected`,String(e)),n.tabIndex=e?0:-1}for(let e of n)e.hidden=!r(e)}function p(e,t){e.classList.remove(t),e.offsetWidth,e.classList.add(t)}function m(){let e=!1;try{e=localStorage.getItem(u)===`paused`}catch{console.debug(`motion: preference storage unavailable`)}let n=matchMedia(`(prefers-reduced-motion: reduce)`),r=()=>!e&&!n.matches,a=[...d(`.sound-sculpture`).map(e=>l(e,r)),...d(`.particle-field`).map(e=>i(e,r))],o=0;function s(){o=0;for(let e of d(`.product-perspective`)){let t=e.getBoundingClientRect().top,n=Math.max(0,Math.min(1,(innerHeight-t)/(innerHeight*.85)));e.style.setProperty(`--unfold`,r()?String(1-n):`0`)}}addEventListener(`scroll`,()=>o||=requestAnimationFrame(s),{passive:!0}),addEventListener(`resize`,s);function c(e,t){let n=d(`.notes-tabs [data-note-tab]`,e),r=n.find(e=>e.dataset.noteTab===t);if(!r)return;let i=d(`[data-note-panel]`,e);f(n,r,i,e=>e.dataset.notePanel===t);let a=i.find(e=>!e.hidden);a&&p(a,`document-arrived`)}for(let e of d(`.product-window`))e.addEventListener(`click`,t=>{let n=t.target.closest(`[data-note-tab]`);n&&(S(),c(e,n.dataset.noteTab))});for(let e of d(`.ask-screen`))e.addEventListener(`click`,t=>{let n=t.target.closest(`[data-question]`);if(!n)return;for(let t of d(`[data-answer]`,e))t.hidden=t.dataset.answer!==n.dataset.question;let r=e.querySelector(`[data-answer-placeholder]`);r&&(r.hidden=!0)});document.addEventListener(`click`,e=>{let t=e.target.closest(`[data-citation]`);if(!t)return;let n=t.closest(`.product-window`)??document.querySelector(`.product-window`),i=n?.querySelector(`[data-turn="${t.dataset.citation}"]`);n&&i&&(n.scrollIntoView({behavior:r()?`smooth`:`instant`,block:`center`}),i.classList.add(`source-active`),setTimeout(()=>i.classList.remove(`source-active`),2500))});let m=d(`.chapter-button[data-chapter]`),h=d(`[data-chapter-view]`),g=document.querySelector(`.sequence-status`),_={capture:`Both streams, recorded here.`,notes:`Notes and minutes written into the meeting.`,ask:`A question leads back to the moment.`};function v(e,t=!1){let n=m.find(t=>t.dataset.chapter===e);if(!n)return;f(m,n,h,t=>t.dataset.chapterView===e);for(let e of m)e.classList.toggle(`active`,e===n);for(let t of d(`.product-window`))c(t,e===`capture`?`notes`:e);let r=_[e];t&&g&&r&&(g.textContent=r)}for(let e of m)e.addEventListener(`click`,()=>{S(),v(e.dataset.chapter,!0)});let y=[],b=!1,x=d(`.walkthrough-trigger`);function S(){y.forEach(clearTimeout),y=[],b=!1,document.body.classList.remove(`sequence-playing`);for(let e of x)e.disabled=!1}for(let e of x)e.addEventListener(`click`,()=>{if(!b){if(document.querySelector(`#walkthrough`)?.scrollIntoView({behavior:r()?`smooth`:`instant`,block:`center`}),S(),v(`capture`,!0),!r())v(`notes`,!0);else{b=!0,document.body.classList.add(`sequence-playing`);for(let e of x)e.disabled=!0;y.push(window.setTimeout(()=>v(`notes`,!0),2200),window.setTimeout(()=>v(`ask`,!0),4700),window.setTimeout(()=>{S(),g&&(g.textContent=`Your turn. Click a step.`)},7e3))}}});let C=d(`[data-document]`),w=d(`[data-keep]`),T=document.querySelector(`.orbit-counter`),E=0;function D(e){E=(e+C.length)%C.length,C.forEach((e,t)=>{let n=(t-E+C.length)%C.length;e.style.setProperty(`--position`,String(n)),e.classList.toggle(`is-front`,n===0)}),w.forEach((e,t)=>e.classList.toggle(`active`,t===E)),T&&(T.textContent=`0${E+1} / 0${C.length}`)}for(let e of C)e.addEventListener(`click`,()=>D(Number(e.dataset.document)));for(let e of w)e.addEventListener(`click`,()=>D(Number(e.dataset.keep)));for(let e of d(`[data-orbit]`))e.addEventListener(`click`,()=>D(E+(e.dataset.orbit===`next`?1:-1)));let O=d(`[data-mode]`),k=d(`[data-mode-panel]`),A=document.querySelector(`.mode-content`);for(let e of O)e.addEventListener(`click`,()=>{f(O,e,k,t=>t.dataset.modePanel===e.dataset.mode),A&&p(A,`on-screen`)});let j=d(`[data-package]`),M=d(`[data-package-panel]`),N=d(`[data-package-download]`);for(let e of j)e.addEventListener(`click`,()=>{f(j,e,M,t=>t.dataset.packagePanel===e.dataset.package);for(let t of N)t.hidden=t.dataset.packageDownload!==e.dataset.package});for(let e of d(`[role="tablist"]`))e.addEventListener(`keydown`,t=>{if(![`ArrowRight`,`ArrowLeft`,`Home`,`End`].includes(t.key))return;let n=d(`[role="tab"]`,e),r=n.indexOf(document.activeElement);if(r<0)return;t.preventDefault();let i=n[t.key===`Home`?0:t.key===`End`?n.length-1:(r+(t.key===`ArrowRight`?1:-1)+n.length)%n.length];i&&(i.click(),i.focus())});let P=new IntersectionObserver(e=>{for(let t of e)t.target.classList.toggle(`on-screen`,t.isIntersecting),t.isIntersecting&&t.target.classList.add(`seen`)},{threshold:.12});for(let e of d(`.product-scene, .chapter-section, .hero, .mode-content`))P.observe(e);function F(){let e=r();document.body.classList.toggle(`motion-paused`,!e);for(let n of d(`.motion-control`))n.innerHTML=t(e?`pause`:`play`),n.setAttribute(`aria-label`,e?`Pause motion`:`Enable motion`),n.setAttribute(`aria-pressed`,String(!e));e||S(),a.forEach(e=>e.render()),s()}for(let t of d(`.motion-control`))t.addEventListener(`click`,()=>{e=!e;try{localStorage.setItem(u,e?`paused`:`playing`)}catch{console.debug(`motion: preference not kept, storage unavailable`)}F()});n.addEventListener(`change`,F),F()}m();
